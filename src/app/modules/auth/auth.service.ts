@@ -9,13 +9,12 @@ import mongoose from "mongoose";
 import { jwtHelpers } from "../../utils/JWT";
 import { configs } from "../../configs";
 import { JwtPayload, Secret } from "jsonwebtoken";
-import mail_sender from "../../utils/mail_sender"
 import sendMail from "../../utils/mail_sender";
+import { isAccountExist } from "../../utils/isAccountExist";
 // register user
 const register_user_into_db = async (payload: TRegisterPayload) => {
     const session = await mongoose.startSession();
     session.startTransaction();
-
     try {
         // Check if the account already exists
         const isExistAccount = await Account_Model.findOne(
@@ -91,30 +90,15 @@ const register_user_into_db = async (payload: TRegisterPayload) => {
 // login user
 const login_user_from_db = async (payload: TLoginPayload) => {
     // check account info 
-    const isExistAccount = await Account_Model.findOne({ email: payload.email })
-    // check account
-    if (!isExistAccount) {
-        throw new AppError("Account not found!!", httpStatus.NOT_FOUND)
-    }
-    if (isExistAccount.isDeleted) {
-        throw new AppError("Account deleted !!", httpStatus.BAD_REQUEST)
-    }
-    if (isExistAccount.status == "BLOCK") {
-        throw new AppError("Account is blocked !!", httpStatus.BAD_REQUEST)
-    }
-    if (!isExistAccount.isVerified) {
-        throw new AppError("Account is not verified !!", httpStatus.BAD_REQUEST)
-    }
+    const isExistAccount = await isAccountExist(payload?.email)
 
     const isPasswordMatch = await bcrypt.compare(
         payload.password,
         isExistAccount.password,
     );
-
     if (!isPasswordMatch) {
         throw new AppError('Invalid password', httpStatus.UNAUTHORIZED);
     }
-
     const accessToken = jwtHelpers.generateToken(
         {
             email: isExistAccount.email,
@@ -141,10 +125,7 @@ const login_user_from_db = async (payload: TLoginPayload) => {
 }
 
 const get_my_profile_from_db = async (email: string) => {
-    const isExistAccount = await Account_Model.findOne({ email, status: "ACTIVE", isDeleted: false })
-    if (!isExistAccount) {
-        throw new AppError("Account not found! Go support for need any help!", httpStatus.NOT_FOUND)
-    }
+    const isExistAccount = await isAccountExist(email)
     const accountProfile = await User_Model.findOne({ accountId: isExistAccount._id })
     isExistAccount.password = ""
     return {
@@ -185,10 +166,7 @@ const change_password_from_db = async (
         newPassword: string;
     },
 ) => {
-    const isExistAccount = await Account_Model.findOne({ email: user.email, status: "ACTIVE", isDeleted: false })
-    if (!isExistAccount) {
-        throw new AppError('Account not found !', httpStatus.NOT_FOUND);
-    }
+    const isExistAccount = await isAccountExist(user?.email)
 
     const isCorrectPassword: boolean = await bcrypt.compare(
         payload.oldPassword,
@@ -208,12 +186,7 @@ const change_password_from_db = async (
 };
 
 const forget_password_from_db = async (email: string) => {
-    const isAccountExists = await Account_Model.findOne({ email, status: "ACTIVE", isDeleted: false })
-
-    if (!isAccountExists) {
-        throw new AppError('Account not found', 404);
-    }
-
+    const isAccountExists = await isAccountExist(email)
     const resetToken = jwtHelpers.generateToken(
         {
             email: isAccountExists.email,
@@ -254,13 +227,7 @@ const reset_password_into_db = async (
         );
     }
 
-    const isAccountExists = await Account_Model.findOne({ email, status: "ACTIVE", isDeleted: false })
-    if (!isAccountExists) {
-        throw new AppError('Account not found!!', httpStatus.NOT_FOUND);
-    }
-    if (isAccountExists.email !== email) {
-        throw new AppError('Invalid email', httpStatus.UNAUTHORIZED);
-    }
+    const isAccountExists = await isAccountExist(email)
 
     const hashedPassword: string = await bcrypt.hash(newPassword, 10);
 
@@ -283,10 +250,6 @@ const verified_account_into_db = async (token: string) => {
         if (isExistAccount.isDeleted) {
             throw new AppError("Account deleted !!", httpStatus.BAD_REQUEST)
         }
-        if (isExistAccount.status == "BLOCK") {
-            throw new AppError("Account is blocked !!", httpStatus.BAD_REQUEST)
-        }
-
         const result = await Account_Model.findOneAndUpdate({ email }, { isVerified: true }, { new: true })
 
         return result
@@ -297,17 +260,7 @@ const verified_account_into_db = async (token: string) => {
 }
 
 const get_new_verification_link_from_db = async (email: string) => {
-    const isExistAccount = await Account_Model.findOne({ email })
-    // check account
-    if (!isExistAccount) {
-        throw new AppError("Account not found!!", httpStatus.NOT_FOUND)
-    }
-    if (isExistAccount.isDeleted) {
-        throw new AppError("Account deleted !!", httpStatus.BAD_REQUEST)
-    }
-    if (isExistAccount.status == "BLOCK") {
-        throw new AppError("Account is blocked !!", httpStatus.BAD_REQUEST)
-    }
+    const isExistAccount = await isAccountExist(email)
 
     const verifiedToken = jwtHelpers.generateToken(
         {

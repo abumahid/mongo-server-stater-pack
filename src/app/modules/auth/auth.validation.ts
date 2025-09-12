@@ -24,7 +24,7 @@ const resetPassword = z.object({
     email: z.string()
 })
 const verified_account = z.object({
-    token: z.string({ required_error: "Token is Required!!" })
+    token: z.string({ message: "Token is Required!!" })
 })
 
 export const auth_validation = {
