@@ -3,7 +3,7 @@ export type TAccount = {
     password: string;
     lastPasswordChange?: Date;
     isDeleted?: boolean;
-    status?: "ACTIVE" | "BLOCK";
+    accountStatus?: "ACTIVE" | "INACTIVE" | "SUSPENDED";
     role?: "USER" | "ADMIN",
     isVerified?: boolean,
 }

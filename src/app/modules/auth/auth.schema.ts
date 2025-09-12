@@ -1,4 +1,4 @@
-import { model, Schema, Types } from "mongoose";
+import { model, Schema } from "mongoose";
 import { TAccount } from "./auth.interface";
 
 
@@ -7,7 +7,7 @@ const authSchema = new Schema<TAccount>({
     password: { type: String, required: true },
     lastPasswordChange: { type: String },
     isDeleted: { type: Boolean, default: false },
-    status: { type: String, default: "ACTIVE" },
+    accountStatus: { type: String, default: "ACTIVE" },
     role: { type: String, default: "USER" },
     isVerified: { type: Boolean, default: false }
 }, {
