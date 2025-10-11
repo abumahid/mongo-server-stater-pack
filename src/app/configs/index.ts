@@ -2,7 +2,7 @@ import "dotenv/config";
 
 export const configs = {
     port: process.env.PORT,
-    env: "development",
+    env: process.env.NODE_ENV,
     jwt: {
         access_token: process.env.ACCESS_TOKEN,
         refresh_token: process.env.REFRESH_TOKEN,
